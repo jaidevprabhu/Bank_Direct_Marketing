@@ -141,13 +141,13 @@ simple_pipeline.fit(X_train, y_train)
 
 We will now examine the accuracy of our model using appropriate metrics. 
 
-- Since this is a classification problem, the Confusion Matrix will show us the classes and the true v/s predicted labels.
+- Since this is a classification problem, the Confusion Matrix will show us the classes and the true v/s predicted labels
 ![Simple Model Confusion Matrix](images/simple_model_CM.png)
 
-We will now proceed to see how the AUC metric now scores for this simnple model. 
+We will now see the AUC metric scores for this simple model. 
 ![Simple Model ROC AUC chart](images/ROC_AUC_simple_pipeline.png)
 
-We note that it has improved somewhat from the baseline model getting the AUC from 0.50 to 0.71, so this is progress.
+It has improved somewhat from the baseline model, getting the AUC from 0.50 to 0.71, which is progress.
 
 ###  Model Comparisons 
 
