@@ -193,4 +193,93 @@ models_results.to_markdown()
 2. **SVC** had the largest fit-time as was to be expected. All other models training time was insignificant as being less the 1 second.
 3. **KNN**, **LogReg** and **SVM** have the the same performance so far.
 
+### Problem 11: Improving the Model
 
+- The topic of feature engineering and gender selection was dealt with in the paper, so we will proceed to other ways to improve the performance.
+- We will do Hyperparameter tuning using GridSearchCV.
+- Further, we will evaluate performance using ROC AUC more extensively.
+- Finally, we will also use SMOTE to oversample the under-represented class.
+
+### `GridSearchCV` 
+
+1. First we create some helper functions to tune for the best hyperparameters in each model
+2. Next, we create a dictionary of the hyperparameters for each type of classifier.
+3. Then we run this GridSearch using the smaller dataset provided.
+4. Next, we see the results that get us the best tuning parameter.
+5. Finally, we use these hyperparameters and re-run on the model using the entire dataset and evaluate the improvements.
+
+In this report we will only briefly show the code, please refer to the notebook for all class definitions and functions, and more charts.
+
+```python
+    # Create the GridSearchCV object
+    grid_search = GridSearchCV(
+        pipeline, 
+        param_grid, 
+        scoring='precision', 
+        cv=5,
+        verbose=3,
+    )
+    
+    # Fit the grid search to the training data
+    grid_search.fit(X_train, y_train)
+
+...
+...
+
+# Evaluate different classifiers
+evaluate_classifier(KNeighborsClassifier(), knn_param_grid, preprocessor, X_train, y_train, X_test, y_test, tuning_results)
+evaluate_classifier(DecisionTreeClassifier(), decision_tree_param_grid, preprocessor, X_train, y_train, X_test, y_test, tuning_results)
+evaluate_classifier(LogisticRegression(), logistic_regression_param_grid, preprocessor, X_train, y_train, X_test, y_test, tuning_results)
+evaluate_classifier(SVC(), svc_param_grid, preprocessor, X_train, y_train, X_test, y_test, tuning_results)
+```
+
+![Simple Model Confusion Matrix](images/Hyperparameter_Model_Tuning_Results.png)
+
+**Summary of Tuning**
+
+- We see that **LogReg** and **SVC** models have the best test results after GridSearch based on the precision scores.
+- We have seen precision scores here and tuned for that.
+- We will next explore the ROC AUC metric, by running the model again and training it using the best parameters obtained in the GridSearch.
+
+We will apply the SVC model again using the best parameters found from the tuned model, and get the AUC metric to compare with what the Paper has published. 
+```python
+tuning_results_df.loc['SVC']['Best Parameters']
+{'classifier__C': 1, 'classifier__gamma': 'auto', 'classifier__kernel': 'rbf'}
+
+best_params = tuning_results_df.loc['SVC']['Best Parameters']
+svc_model = SVC(
+    kernel = best_params['classifier__kernel'],
+    C = best_params['classifier__C'],
+    gamma = best_params['classifier__gamma'],
+)
+prod_pipeline = Pipeline(
+    steps=[
+        ('preprocessor', preprocessor),
+        ('classifier', svc_model),
+    ]
+)
+prod_pipeline.fit(X_train, y_train)
+```
+
+![Tuned SVC production model ROC AUC chart](images/ROC_AUC_SVC_after_tuning.png)
+
+Notice the metric obtained by the paper authors using SVM - **we were able to match it with this exercise.** 
+
+![Paper Results for different model](images/paper_results.png)
+
+#### Other findings
+
+1. Credit default feature
+   
+![Influence of credit default on contact result](images/default_effect_on_contact.png)
+
+Those who are not in default (Result = 'no') seem to mirror the distribution of the whole dataset, while those whose credit status is 'Unknown' are less than half as likely to be successful in landing deposit after contact. This information can possibly be used in further tuning. 
+
+#### Other tuning methods
+
+Since we are dealing with an imbalanced class we can use methods to oversample and ensure that the classes have equal representation by using oversampling methods such as
+[SMOTE](https://imbalanced-learn.org/stable/references/generated/imblearn.over_sampling.SMOTE.html). 
+
+The [notebook](Imbalance_SMOTE.ipynb) - has implemented this tuning and we see the results with the graph below which is even better than what we saw with SVC tuned but same dataset. 
+
+![Tuned SVC production model with oversampling from SMOTE - ROC AUC chart](images/ROC_AUC_SVC_after_SMOTE.png)
